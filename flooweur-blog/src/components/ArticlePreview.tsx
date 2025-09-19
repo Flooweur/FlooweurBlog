@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import ReactMarkdown from 'react-markdown';
-import { FiX, FiEdit3, FiDownload } from 'react-icons/fi';
+import { FiX, FiEdit3 } from 'react-icons/fi';
 import { Modal, ModalContent, Button } from '../styles/GlobalStyles';
 import { Article } from '../types/Article';
 
@@ -171,15 +171,13 @@ interface ArticlePreviewProps {
   isOpen: boolean;
   onClose: () => void;
   onEdit: (article: Article) => void;
-  onExportPDF: (article: Article) => void;
 }
 
 const ArticlePreview: React.FC<ArticlePreviewProps> = ({
   article,
   isOpen,
   onClose,
-  onEdit,
-  onExportPDF
+  onEdit
 }) => {
   return (
     <Modal isOpen={isOpen}>
@@ -203,10 +201,6 @@ const ArticlePreview: React.FC<ArticlePreviewProps> = ({
             )}
           </div>
           <HeaderActions>
-            <Button variant="secondary" onClick={() => onExportPDF(article)}>
-              <FiDownload />
-              Export PDF
-            </Button>
             <Button variant="primary" onClick={() => onEdit(article)}>
               <FiEdit3 />
               Edit

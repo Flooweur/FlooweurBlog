@@ -6,9 +6,7 @@ import SearchPopup from './components/SearchPopup';
 import ArticleEditor from './components/ArticleEditor';
 import ArticlePreview from './components/ArticlePreview';
 import GlobalSearchButton from './components/GlobalSearchButton';
-import { Article, ArticleFolder } from './types/Article';
-import { exportArticleToPDF } from './utils/pdfExport';
-import { saveArticleAsJSON } from './utils/jsonStorage';
+import { Article, Tag } from './types/Article';
 import { apiService } from './services/api';
 
 type AppView = 'presentation' | 'search' | 'editor';
@@ -16,18 +14,18 @@ type AppView = 'presentation' | 'search' | 'editor';
 function App() {
   const [currentView, setCurrentView] = useState<AppView>('presentation');
   const [articles, setArticles] = useState<Article[]>([]);
-  const [folders, setFolders] = useState<ArticleFolder[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
   const [currentArticle, setCurrentArticle] = useState<Article | undefined>();
   const [previewArticle, setPreviewArticle] = useState<Article | undefined>();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-  // Load articles and folders from MongoDB on component mount
+  // Load articles and tags from MongoDB on component mount
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [articlesResponse, foldersResponse] = await Promise.all([
+        const [articlesResponse, tagsResponse] = await Promise.all([
           apiService.getArticles(),
-          apiService.getFolders()
+          apiService.getTags()
         ]);
 
         if (articlesResponse.data) {
@@ -36,10 +34,10 @@ function App() {
           console.error('Error loading articles:', articlesResponse.error);
         }
 
-        if (foldersResponse.data) {
-          setFolders(foldersResponse.data);
+        if (tagsResponse.data) {
+          setTags(tagsResponse.data);
         } else {
-          console.error('Error loading folders:', foldersResponse.error);
+          console.error('Error loading tags:', tagsResponse.error);
         }
       } catch (error) {
         console.error('Error loading data:', error);
@@ -112,13 +110,6 @@ function App() {
         }
       }
       
-      // Automatically save as JSON file
-      try {
-        saveArticleAsJSON(savedArticle);
-      } catch (error) {
-        console.error('Error saving article as JSON:', error);
-      }
-      
       setCurrentView('presentation');
     } catch (error) {
       console.error('Error saving article:', error);
@@ -131,38 +122,6 @@ function App() {
     setCurrentArticle(undefined);
   };
 
-  const handleExportPDF = async (article: Article) => {
-    try {
-      await exportArticleToPDF(article);
-    } catch (error) {
-      console.error('Error exporting PDF:', error);
-      alert('Error exporting PDF. Please try again.');
-    }
-  };
-
-  const handleImportArticles = (importedArticles: Article[]) => {
-    // Merge imported articles with existing ones, avoiding duplicates
-    const existingIds = new Set(articles.map(a => a._id || a.id));
-    const newArticles = importedArticles.filter(a => !existingIds.has(a._id || a.id));
-    setArticles(prev => [...prev, ...newArticles]);
-  };
-
-  const handleCreateFolder = async (name: string) => {
-    try {
-      const response = await apiService.createFolder(name);
-      if (response.data) {
-        setFolders(prev => [...prev, response.data!]);
-      } else {
-        throw new Error(response.error || 'Failed to create folder');
-      }
-    } catch (error) {
-      console.error('Error creating folder:', error);
-      alert('Error creating folder. Please try again.');
-    }
-  };
-
-  // Get unique folder names from articles
-  const folderNames = Array.from(new Set(articles.map(article => article.folder).filter(Boolean)));
 
   return (
     <ThemeProvider>
@@ -177,8 +136,6 @@ function App() {
             article={currentArticle}
             onSave={handleSaveArticle}
             onBack={handleBackToPresentation}
-            onExportPDF={handleExportPDF}
-            folders={folderNames}
           />
         )}
 
@@ -186,13 +143,10 @@ function App() {
           isOpen={isSearchOpen}
           onClose={handleCloseSearch}
           onNewArticle={handleNewArticle}
-          onSelectArticle={handleSelectArticle}
           onEditArticle={handleEditArticle}
           onPreviewArticle={handlePreviewArticle}
-          onImportArticles={handleImportArticles}
-          onCreateFolder={handleCreateFolder}
           articles={articles}
-          folders={folders}
+          tags={tags}
         />
 
         {previewArticle && (
@@ -201,7 +155,6 @@ function App() {
             isOpen={!!previewArticle}
             onClose={handleClosePreview}
             onEdit={handleEditArticle}
-            onExportPDF={handleExportPDF}
           />
         )}
       </div>

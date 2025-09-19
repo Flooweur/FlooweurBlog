@@ -24,27 +24,26 @@ mongoose.connect(MONGODB_URI, {
 const articleSchema = new mongoose.Schema({
   title: { type: String, required: true },
   content: { type: String, required: true },
-  tags: [{ type: String }],
-  folder: { type: String },
+  tags: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Tag' }],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
 
-// Folder Schema
-const folderSchema = new mongoose.Schema({
+// Tag Schema
+const tagSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true },
   createdAt: { type: Date, default: Date.now }
 });
 
 const Article = mongoose.model('Article', articleSchema);
-const Folder = mongoose.model('Folder', folderSchema);
+const Tag = mongoose.model('Tag', tagSchema);
 
 // Routes
 
 // Get all articles
 app.get('/api/articles', async (req, res) => {
   try {
-    const articles = await Article.find().sort({ createdAt: -1 });
+    const articles = await Article.find().populate('tags').sort({ createdAt: -1 });
     res.json(articles);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -54,7 +53,7 @@ app.get('/api/articles', async (req, res) => {
 // Get article by ID
 app.get('/api/articles/:id', async (req, res) => {
   try {
-    const article = await Article.findById(req.params.id);
+    const article = await Article.findById(req.params.id).populate('tags');
     if (!article) {
       return res.status(404).json({ error: 'Article not found' });
     }
@@ -69,6 +68,7 @@ app.post('/api/articles', async (req, res) => {
   try {
     const article = new Article(req.body);
     await article.save();
+    await article.populate('tags');
     res.status(201).json(article);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -82,7 +82,7 @@ app.put('/api/articles/:id', async (req, res) => {
       req.params.id,
       { ...req.body, updatedAt: new Date() },
       { new: true }
-    );
+    ).populate('tags');
     if (!article) {
       return res.status(404).json({ error: 'Article not found' });
     }
@@ -105,39 +105,39 @@ app.delete('/api/articles/:id', async (req, res) => {
   }
 });
 
-// Get all folders
-app.get('/api/folders', async (req, res) => {
+// Get all tags
+app.get('/api/tags', async (req, res) => {
   try {
-    const folders = await Folder.find().sort({ createdAt: -1 });
-    res.json(folders);
+    const tags = await Tag.find().sort({ name: 1 });
+    res.json(tags);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Create new folder
-app.post('/api/folders', async (req, res) => {
+// Create new tag
+app.post('/api/tags', async (req, res) => {
   try {
-    const folder = new Folder(req.body);
-    await folder.save();
-    res.status(201).json(folder);
+    const tag = new Tag(req.body);
+    await tag.save();
+    res.status(201).json(tag);
   } catch (error) {
     if (error.code === 11000) {
-      res.status(400).json({ error: 'Folder name already exists' });
+      res.status(400).json({ error: 'Tag name already exists' });
     } else {
       res.status(400).json({ error: error.message });
     }
   }
 });
 
-// Delete folder
-app.delete('/api/folders/:id', async (req, res) => {
+// Delete tag
+app.delete('/api/tags/:id', async (req, res) => {
   try {
-    const folder = await Folder.findByIdAndDelete(req.params.id);
-    if (!folder) {
-      return res.status(404).json({ error: 'Folder not found' });
+    const tag = await Tag.findByIdAndDelete(req.params.id);
+    if (!tag) {
+      return res.status(404).json({ error: 'Tag not found' });
     }
-    res.json({ message: 'Folder deleted successfully' });
+    res.json({ message: 'Tag deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -150,10 +150,9 @@ app.get('/api/articles/search/:query', async (req, res) => {
     const articles = await Article.find({
       $or: [
         { title: { $regex: query, $options: 'i' } },
-        { content: { $regex: query, $options: 'i' } },
-        { tags: { $in: [new RegExp(query, 'i')] } }
+        { content: { $regex: query, $options: 'i' } }
       ]
-    }).sort({ createdAt: -1 });
+    }).populate('tags').sort({ createdAt: -1 });
     res.json(articles);
   } catch (error) {
     res.status(500).json({ error: error.message });

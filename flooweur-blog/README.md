@@ -7,13 +7,12 @@ A modern, minimalist personal blog built with React, TypeScript, and MongoDB.
 - **Modern React Frontend** with TypeScript
 - **MongoDB Backend** with Docker containerization
 - **Dark/Light Mode** with smooth transitions
-- **Markdown Editor** with live preview
-- **Article Management** with tags and folders
-- **PDF Export** functionality
-- **JSON Import/Export** for backup
+- **Markdown Editor** with clean interface
+- **Article Management** with tag system
 - **Article Preview** modal
 - **Search and Filter** capabilities
 - **Responsive Design** for all devices
+- **Tag Management** with dropdown selection
 
 ## Setup Instructions
 
@@ -71,28 +70,22 @@ The application will be available at:
 
 1. Click the search button (circle icon) at the top center
 2. Click "New Article" to create a new article
-3. Fill in the title, content (markdown), tags, and folder
-4. Click "Save" to save to MongoDB and download JSON file
+3. Fill in the title and content (markdown)
+4. Select tags from the dropdown and click "Add Tag"
+5. Click "Save" to save to MongoDB
 
 ### Managing Articles
 
 - **Preview**: Click on article cards to preview
 - **Edit**: Click the edit icon on article cards
-- **Export PDF**: Use the PDF export button in editor or preview
 - **Search**: Use the search bar to find articles
-- **Filter**: Filter by tags or folders
+- **Filter**: Filter by tags using the dropdown
 
-### Creating Folders
+### Managing Tags
 
-1. Open the search popup
-2. Click "New Folder"
-3. Enter folder name and press Enter
-
-### Import/Export
-
-- **Export All**: Download all articles as JSON backup
-- **Import JSON**: Import articles from JSON file
-- **Individual JSON**: Each article is automatically saved as JSON
+- Tags are automatically created when you add them to articles
+- Use the tag dropdown in the article editor to select existing tags
+- Tags are shared across all articles
 
 ## API Endpoints
 
@@ -102,9 +95,9 @@ The application will be available at:
 - `PUT /api/articles/:id` - Update article
 - `DELETE /api/articles/:id` - Delete article
 - `GET /api/articles/search/:query` - Search articles
-- `GET /api/folders` - Get all folders
-- `POST /api/folders` - Create new folder
-- `DELETE /api/folders/:id` - Delete folder
+- `GET /api/tags` - Get all tags
+- `POST /api/tags` - Create new tag
+- `DELETE /api/tags/:id` - Delete tag
 
 ## Project Structure
 
@@ -161,7 +154,6 @@ The application uses:
 - **React 18** with TypeScript
 - **Styled Components** for styling
 - **React Markdown** for markdown rendering
-- **jsPDF** for PDF generation
 - **Express.js** for backend API
 - **MongoDB** with Mongoose ODM
 

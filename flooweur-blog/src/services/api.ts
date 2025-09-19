@@ -1,4 +1,4 @@
-import { Article, ArticleFolder } from '../types/Article';
+import { Article, Tag } from '../types/Article';
 
 const API_BASE_URL = 'http://localhost:3001/api';
 
@@ -63,20 +63,20 @@ class ApiService {
     return this.request<Article[]>(`/articles/search/${encodeURIComponent(query)}`);
   }
 
-  // Folder operations
-  async getFolders(): Promise<ApiResponse<ArticleFolder[]>> {
-    return this.request<ArticleFolder[]>('/folders');
+  // Tag operations
+  async getTags(): Promise<ApiResponse<Tag[]>> {
+    return this.request<Tag[]>('/tags');
   }
 
-  async createFolder(name: string): Promise<ApiResponse<ArticleFolder>> {
-    return this.request<ArticleFolder>('/folders', {
+  async createTag(name: string): Promise<ApiResponse<Tag>> {
+    return this.request<Tag>('/tags', {
       method: 'POST',
       body: JSON.stringify({ name }),
     });
   }
 
-  async deleteFolder(id: string): Promise<ApiResponse<void>> {
-    return this.request<void>(`/folders/${id}`, {
+  async deleteTag(id: string): Promise<ApiResponse<void>> {
+    return this.request<void>(`/tags/${id}`, {
       method: 'DELETE',
     });
   }

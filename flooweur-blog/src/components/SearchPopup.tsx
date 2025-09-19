@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
-import { FiX, FiSearch, FiFilter, FiPlus, FiFolder, FiFileText, FiTag, FiUpload, FiDownload, FiEdit3 } from 'react-icons/fi';
+import { FiX, FiSearch, FiFilter, FiPlus, FiFileText, FiTag, FiEdit3 } from 'react-icons/fi';
 import { Button, Input, Modal, ModalContent } from '../styles/GlobalStyles';
-import { Article, ArticleFolder } from '../types/Article';
-import { saveAllArticlesAsJSON, loadAllArticlesFromJSON } from '../utils/jsonStorage';
+import { Article, Tag } from '../types/Article';
 
 const SearchContainer = styled.div`
   position: relative;
@@ -29,12 +28,6 @@ const SearchIcon = styled(FiSearch)`
   transform: translateY(-50%);
   color: var(--text-muted);
   pointer-events: none;
-`;
-
-const FilterButton = styled(Button)`
-  display: flex;
-  align-items: center;
-  gap: 8px;
 `;
 
 const CloseButton = styled.button`
@@ -166,117 +159,34 @@ const Tag = styled.span`
   font-size: 11px;
 `;
 
-const FolderItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  margin-bottom: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background-color: var(--bg-secondary);
-    border-color: var(--accent);
-  }
-`;
-
-const FolderIcon = styled.div`
-  color: var(--accent);
-  font-size: 20px;
-`;
-
-const FolderInfo = styled.div`
-  flex: 1;
-`;
-
-const FolderName = styled.h3`
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 4px;
-  color: var(--text-primary);
-`;
-
-const FolderCount = styled.div`
-  font-size: 12px;
-  color: var(--text-secondary);
-`;
-
 interface SearchPopupProps {
   isOpen: boolean;
   onClose: () => void;
   onNewArticle: () => void;
-  onSelectArticle: (article: Article) => void;
   onEditArticle: (article: Article) => void;
   onPreviewArticle: (article: Article) => void;
-  onImportArticles: (articles: Article[]) => void;
-  onCreateFolder: (name: string) => void;
   articles: Article[];
-  folders: ArticleFolder[];
+  tags: Tag[];
 }
 
 const SearchPopup: React.FC<SearchPopupProps> = ({
   isOpen,
   onClose,
   onNewArticle,
-  onSelectArticle,
   onEditArticle,
   onPreviewArticle,
-  onImportArticles,
-  onCreateFolder,
   articles,
-  folders
+  tags
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
-  const [showFoldersOnly, setShowFoldersOnly] = useState(false);
-  const [newFolderName, setNewFolderName] = useState('');
-  const [showNewFolderInput, setShowNewFolderInput] = useState(false);
-
-  const allTags = Array.from(new Set(articles.flatMap(article => article.tags)));
 
   const filteredArticles = articles.filter(article => {
     const matchesSearch = article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                         article.content.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTag = !selectedTag || article.tags.includes(selectedTag);
+    const matchesTag = !selectedTag || article.tags.some(tag => tag._id === selectedTag);
     return matchesSearch && matchesTag;
   });
-
-  const filteredFolders = folders.filter(folder => {
-    return folder.name.toLowerCase().includes(searchQuery.toLowerCase());
-  });
-
-  const handleExportAll = () => {
-    saveAllArticlesAsJSON(articles);
-  };
-
-  const handleImportAll = async () => {
-    try {
-      const importedArticles = await loadAllArticlesFromJSON();
-      onImportArticles(importedArticles);
-      alert(`Successfully imported ${importedArticles.length} articles!`);
-    } catch (error) {
-      console.error('Error importing articles:', error);
-      alert('Error importing articles from JSON file');
-    }
-  };
-
-  const handleCreateFolder = () => {
-    if (newFolderName.trim()) {
-      onCreateFolder(newFolderName.trim());
-      setNewFolderName('');
-      setShowNewFolderInput(false);
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleCreateFolder();
-    }
-  };
 
   return (
     <Modal isOpen={isOpen}>
@@ -297,62 +207,27 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
         </SearchHeader>
 
         <ActionsSection>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <Button variant="secondary" onClick={handleImportAll}>
-              <FiUpload />
-              Import JSON
-            </Button>
-            <Button variant="secondary" onClick={handleExportAll}>
-              <FiDownload />
-              Export All
-            </Button>
-            <Button variant="secondary" onClick={() => setShowNewFolderInput(!showNewFolderInput)}>
-              <FiFolder />
-              New Folder
-            </Button>
-          </div>
+          <div />
           <NewArticleButton variant="primary" onClick={onNewArticle}>
             <FiPlus />
             New Article
           </NewArticleButton>
         </ActionsSection>
 
-        {showNewFolderInput && (
-          <div style={{ marginBottom: '24px', display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <Input
-              value={newFolderName}
-              onChange={(e) => setNewFolderName(e.target.value)}
-              placeholder="Folder name..."
-              onKeyPress={handleKeyPress}
-              style={{ flex: 1 }}
-            />
-            <Button variant="primary" onClick={handleCreateFolder}>
-              Create
-            </Button>
-            <Button variant="secondary" onClick={() => setShowNewFolderInput(false)}>
-              Cancel
-            </Button>
-          </div>
-        )}
-
         <FilterSection>
-          <FilterButton variant="secondary" onClick={() => setShowFoldersOnly(!showFoldersOnly)}>
-            <FiFilter />
-            {showFoldersOnly ? 'Show Articles' : 'Show Folders Only'}
-          </FilterButton>
           <TagFilter
             value={selectedTag}
             onChange={(e) => setSelectedTag(e.target.value)}
           >
             <option value="">All Tags</option>
-            {allTags.map(tag => (
-              <option key={tag} value={tag}>{tag}</option>
+            {tags.map(tag => (
+              <option key={tag._id} value={tag._id}>{tag.name}</option>
             ))}
           </TagFilter>
         </FilterSection>
 
         <ArticlesList>
-          {!showFoldersOnly && filteredArticles.map(article => (
+          {filteredArticles.map(article => (
             <ArticleItem key={article._id || article.id}>
               <ArticleIcon>
                 <FiFileText />
@@ -361,13 +236,12 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
                 <ArticleTitle>{article.title}</ArticleTitle>
                 <ArticleMeta>
                   <span>{new Date(article.createdAt).toLocaleDateString()}</span>
-                  {article.folder && <span>📁 {article.folder}</span>}
                 </ArticleMeta>
                 <ArticleTags>
                   {article.tags.map(tag => (
-                    <Tag key={tag}>
+                    <Tag key={tag._id}>
                       <FiTag style={{ marginRight: 4 }} />
-                      {tag}
+                      {tag.name}
                     </Tag>
                   ))}
                 </ArticleTags>
@@ -381,18 +255,6 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
                 </ActionButton>
               </ArticleActions>
             </ArticleItem>
-          ))}
-
-          {showFoldersOnly && filteredFolders.map(folder => (
-            <FolderItem key={folder.id}>
-              <FolderIcon>
-                <FiFolder />
-              </FolderIcon>
-              <FolderInfo>
-                <FolderName>{folder.name}</FolderName>
-                <FolderCount>{folder.articles.length} articles</FolderCount>
-              </FolderInfo>
-            </FolderItem>
           ))}
         </ArticlesList>
       </ModalContent>
