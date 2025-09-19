@@ -255,6 +255,13 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
     }
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddTag();
+    }
+  };
+
   const handleRemoveTag = (tagToRemove: string) => {
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
@@ -383,8 +390,8 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
               id="tags"
               value={newTag}
               onChange={(e) => setNewTag(e.target.value)}
-              placeholder="Add a tag..."
-              onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
+              placeholder="Add a tag and press Enter..."
+              onKeyPress={handleKeyPress}
             />
             <TagsList>
               {tags.map(tag => (

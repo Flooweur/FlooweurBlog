@@ -1,16 +1,17 @@
 export interface Article {
-  id: string;
+  _id?: string;
+  id?: string; // For compatibility
   title: string;
   content: string;
   tags: string[];
   folder?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 }
 
 export interface ArticleFolder {
-  id: string;
+  _id?: string;
+  id?: string; // For compatibility
   name: string;
-  articles: Article[];
-  createdAt: Date;
+  createdAt: Date | string;
 }

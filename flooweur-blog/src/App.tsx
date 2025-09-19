@@ -4,9 +4,12 @@ import { GlobalStyles } from './styles/GlobalStyles';
 import PresentationPage from './components/PresentationPage';
 import SearchPopup from './components/SearchPopup';
 import ArticleEditor from './components/ArticleEditor';
+import ArticlePreview from './components/ArticlePreview';
+import GlobalSearchButton from './components/GlobalSearchButton';
 import { Article, ArticleFolder } from './types/Article';
 import { exportArticleToPDF } from './utils/pdfExport';
 import { saveArticleAsJSON } from './utils/jsonStorage';
+import { apiService } from './services/api';
 
 type AppView = 'presentation' | 'search' | 'editor';
 
@@ -15,88 +18,112 @@ function App() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [folders, setFolders] = useState<ArticleFolder[]>([]);
   const [currentArticle, setCurrentArticle] = useState<Article | undefined>();
+  const [previewArticle, setPreviewArticle] = useState<Article | undefined>();
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-  // Load articles from localStorage on component mount
+  // Load articles and folders from MongoDB on component mount
   useEffect(() => {
-    const savedArticles = localStorage.getItem('flooweur-blog-articles');
-    const savedFolders = localStorage.getItem('flooweur-blog-folders');
-    
-    if (savedArticles) {
+    const loadData = async () => {
       try {
-        const parsedArticles = JSON.parse(savedArticles).map((article: any) => ({
-          ...article,
-          createdAt: new Date(article.createdAt),
-          updatedAt: new Date(article.updatedAt)
-        }));
-        setArticles(parsedArticles);
-      } catch (error) {
-        console.error('Error loading articles:', error);
-      }
-    }
+        const [articlesResponse, foldersResponse] = await Promise.all([
+          apiService.getArticles(),
+          apiService.getFolders()
+        ]);
 
-    if (savedFolders) {
-      try {
-        const parsedFolders = JSON.parse(savedFolders).map((folder: any) => ({
-          ...folder,
-          createdAt: new Date(folder.createdAt),
-          articles: folder.articles.map((article: any) => ({
-            ...article,
-            createdAt: new Date(article.createdAt),
-            updatedAt: new Date(article.updatedAt)
-          }))
-        }));
-        setFolders(parsedFolders);
+        if (articlesResponse.data) {
+          setArticles(articlesResponse.data);
+        } else {
+          console.error('Error loading articles:', articlesResponse.error);
+        }
+
+        if (foldersResponse.data) {
+          setFolders(foldersResponse.data);
+        } else {
+          console.error('Error loading folders:', foldersResponse.error);
+        }
       } catch (error) {
-        console.error('Error loading folders:', error);
+        console.error('Error loading data:', error);
       }
-    }
+    };
+
+    loadData();
   }, []);
 
-  // Save articles to localStorage whenever articles change
-  useEffect(() => {
-    localStorage.setItem('flooweur-blog-articles', JSON.stringify(articles));
-  }, [articles]);
-
-  // Save folders to localStorage whenever folders change
-  useEffect(() => {
-    localStorage.setItem('flooweur-blog-folders', JSON.stringify(folders));
-  }, [folders]);
-
   const handleSearchClick = () => {
-    setCurrentView('search');
+    setIsSearchOpen(true);
   };
 
   const handleCloseSearch = () => {
-    setCurrentView('presentation');
+    setIsSearchOpen(false);
   };
 
   const handleNewArticle = () => {
     setCurrentArticle(undefined);
     setCurrentView('editor');
+    setIsSearchOpen(false);
   };
 
   const handleSelectArticle = (article: Article) => {
     setCurrentArticle(article);
     setCurrentView('editor');
+    setIsSearchOpen(false);
   };
 
-  const handleSaveArticle = (article: Article) => {
-    if (currentArticle) {
-      // Update existing article
-      setArticles(prev => prev.map(a => a.id === article.id ? article : a));
-    } else {
-      // Add new article
-      setArticles(prev => [...prev, article]);
-    }
-    
-    // Automatically save as JSON file
+  const handleEditArticle = (article: Article) => {
+    setCurrentArticle(article);
+    setCurrentView('editor');
+    setIsSearchOpen(false);
+  };
+
+  const handlePreviewArticle = (article: Article) => {
+    setPreviewArticle(article);
+  };
+
+  const handleClosePreview = () => {
+    setPreviewArticle(undefined);
+  };
+
+  const handleSaveArticle = async (article: Article) => {
     try {
-      saveArticleAsJSON(article);
+      let savedArticle: Article;
+      
+      if (currentArticle && (currentArticle._id || currentArticle.id)) {
+        // Update existing article
+        const response = await apiService.updateArticle(
+          currentArticle._id || currentArticle.id!, 
+          article
+        );
+        if (response.data) {
+          savedArticle = response.data;
+          setArticles(prev => prev.map(a => 
+            (a._id || a.id) === (currentArticle._id || currentArticle.id) ? savedArticle : a
+          ));
+        } else {
+          throw new Error(response.error || 'Failed to update article');
+        }
+      } else {
+        // Create new article
+        const response = await apiService.createArticle(article);
+        if (response.data) {
+          savedArticle = response.data;
+          setArticles(prev => [...prev, savedArticle]);
+        } else {
+          throw new Error(response.error || 'Failed to create article');
+        }
+      }
+      
+      // Automatically save as JSON file
+      try {
+        saveArticleAsJSON(savedArticle);
+      } catch (error) {
+        console.error('Error saving article as JSON:', error);
+      }
+      
+      setCurrentView('presentation');
     } catch (error) {
-      console.error('Error saving article as JSON:', error);
+      console.error('Error saving article:', error);
+      alert('Error saving article. Please try again.');
     }
-    
-    setCurrentView('presentation');
   };
 
   const handleBackToPresentation = () => {
@@ -115,9 +142,23 @@ function App() {
 
   const handleImportArticles = (importedArticles: Article[]) => {
     // Merge imported articles with existing ones, avoiding duplicates
-    const existingIds = new Set(articles.map(a => a.id));
-    const newArticles = importedArticles.filter(a => !existingIds.has(a.id));
+    const existingIds = new Set(articles.map(a => a._id || a.id));
+    const newArticles = importedArticles.filter(a => !existingIds.has(a._id || a.id));
     setArticles(prev => [...prev, ...newArticles]);
+  };
+
+  const handleCreateFolder = async (name: string) => {
+    try {
+      const response = await apiService.createFolder(name);
+      if (response.data) {
+        setFolders(prev => [...prev, response.data!]);
+      } else {
+        throw new Error(response.error || 'Failed to create folder');
+      }
+    } catch (error) {
+      console.error('Error creating folder:', error);
+      alert('Error creating folder. Please try again.');
+    }
   };
 
   // Get unique folder names from articles
@@ -127,21 +168,9 @@ function App() {
     <ThemeProvider>
       <GlobalStyles />
       <div className="App">
-        {currentView === 'presentation' && (
-          <PresentationPage onSearchClick={handleSearchClick} />
-        )}
+        <GlobalSearchButton onClick={handleSearchClick} />
         
-        {currentView === 'search' && (
-          <SearchPopup
-            isOpen={true}
-            onClose={handleCloseSearch}
-            onNewArticle={handleNewArticle}
-            onSelectArticle={handleSelectArticle}
-            onImportArticles={handleImportArticles}
-            articles={articles}
-            folders={folders}
-          />
-        )}
+        {currentView === 'presentation' && <PresentationPage />}
         
         {currentView === 'editor' && (
           <ArticleEditor
@@ -150,6 +179,29 @@ function App() {
             onBack={handleBackToPresentation}
             onExportPDF={handleExportPDF}
             folders={folderNames}
+          />
+        )}
+
+        <SearchPopup
+          isOpen={isSearchOpen}
+          onClose={handleCloseSearch}
+          onNewArticle={handleNewArticle}
+          onSelectArticle={handleSelectArticle}
+          onEditArticle={handleEditArticle}
+          onPreviewArticle={handlePreviewArticle}
+          onImportArticles={handleImportArticles}
+          onCreateFolder={handleCreateFolder}
+          articles={articles}
+          folders={folders}
+        />
+
+        {previewArticle && (
+          <ArticlePreview
+            article={previewArticle}
+            isOpen={!!previewArticle}
+            onClose={handleClosePreview}
+            onEdit={handleEditArticle}
+            onExportPDF={handleExportPDF}
           />
         )}
       </div>

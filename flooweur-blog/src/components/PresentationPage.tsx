@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { FiSun, FiMoon, FiSearch } from 'react-icons/fi';
+import { FiSun, FiMoon } from 'react-icons/fi';
 import { useTheme } from '../contexts/ThemeContext';
 
 const PresentationContainer = styled.div`
@@ -40,26 +40,6 @@ const ThemeToggle = styled.button`
   }
 `;
 
-const SearchButton = styled.button`
-  background: var(--accent);
-  border: none;
-  color: white;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  font-size: 24px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 16px var(--shadow);
-  transition: all 0.2s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px var(--shadow);
-  }
-`;
 
 const MainContent = styled.div`
   max-width: 800px;
@@ -91,11 +71,7 @@ const Description = styled.div`
   margin: 0 auto;
 `;
 
-interface PresentationPageProps {
-  onSearchClick: () => void;
-}
-
-const PresentationPage: React.FC<PresentationPageProps> = ({ onSearchClick }) => {
+const PresentationPage: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
 
   return (
@@ -116,10 +92,6 @@ const PresentationPage: React.FC<PresentationPageProps> = ({ onSearchClick }) =>
           and organize your knowledge.
         </Description>
       </MainContent>
-
-      <SearchButton onClick={onSearchClick}>
-        <FiSearch />
-      </SearchButton>
     </PresentationContainer>
   );
 };
