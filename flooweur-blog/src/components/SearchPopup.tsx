@@ -19,6 +19,7 @@ const SearchHeader = styled.div`
 const SearchInput = styled(Input)`
   flex: 1;
   padding-left: 40px;
+  padding-right: 40px;
 `;
 
 const SearchIcon = styled(FiSearch)`
@@ -28,6 +29,30 @@ const SearchIcon = styled(FiSearch)`
   transform: translateY(-50%);
   color: var(--text-muted);
   pointer-events: none;
+`;
+
+const AddButton = styled.button`
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--accent);
+  border: none;
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: var(--accent-hover);
+    transform: translateY(-50%) scale(1.1);
+  }
 `;
 
 const CloseButton = styled.button`
@@ -45,18 +70,6 @@ const CloseButton = styled.button`
   }
 `;
 
-const ActionsSection = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-`;
-
-const NewArticleButton = styled(Button)`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-`;
 
 const FilterSection = styled.div`
   display: flex;
@@ -188,8 +201,14 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
     return matchesSearch && matchesTag;
   });
 
+  const handleModalClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   return (
-    <Modal isOpen={isOpen}>
+    <Modal isOpen={isOpen} onClick={handleModalClick}>
       <ModalContent>
         <SearchHeader>
           <SearchContainer>
@@ -200,19 +219,14 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
+            <AddButton onClick={onNewArticle} title="New Article">
+              <FiPlus />
+            </AddButton>
           </SearchContainer>
           <CloseButton onClick={onClose}>
             <FiX />
           </CloseButton>
         </SearchHeader>
-
-        <ActionsSection>
-          <div />
-          <NewArticleButton variant="primary" onClick={onNewArticle}>
-            <FiPlus />
-            New Article
-          </NewArticleButton>
-        </ActionsSection>
 
         <FilterSection>
           <TagFilter
