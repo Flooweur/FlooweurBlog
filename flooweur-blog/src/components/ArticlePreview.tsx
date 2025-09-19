@@ -181,7 +181,7 @@ const ArticlePreview: React.FC<ArticlePreviewProps> = ({
 }) => {
   return (
     <Modal isOpen={isOpen}>
-      <ModalContent style={{ maxWidth: '800px', maxHeight: '90vh' }}>
+      <ModalContent style={{ maxWidth: '95vw', maxHeight: '95vh', width: '95vw', height: '95vh' }}>
         <PreviewHeader>
           <div>
             <PreviewTitle>{article.title}</PreviewTitle>
@@ -201,11 +201,11 @@ const ArticlePreview: React.FC<ArticlePreviewProps> = ({
           </div>
           <HeaderActions>
             <Button variant="primary" onClick={() => onEdit(article)}>
-              <FiEdit3 />
+              <span><FiEdit3 /></span>
               Edit
             </Button>
             <CloseButton onClick={onClose}>
-              <FiX />
+              <span><FiX /></span>
             </CloseButton>
           </HeaderActions>
         </PreviewHeader>

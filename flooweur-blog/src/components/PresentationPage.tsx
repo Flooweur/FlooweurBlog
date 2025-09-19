@@ -79,7 +79,7 @@ const PresentationPage: React.FC = () => {
       <Header>
         <div />
         <ThemeToggle onClick={toggleTheme}>
-          {theme === 'light' ? <FiMoon /> : <FiSun />}
+          {theme === 'light' ? <span><FiMoon /></span> : <span><FiSun /></span>}
         </ThemeToggle>
       </Header>
 

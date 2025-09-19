@@ -1,6 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
-import { FiSave, FiArrowLeft, FiTag } from 'react-icons/fi';
+import { 
+  FiSave, 
+  FiArrowLeft, 
+  FiTag, 
+  FiBold, 
+  FiItalic, 
+  FiUnderline,
+  FiLink,
+  FiImage,
+  FiList,
+  FiCode,
+  FiMessageSquare,
+  FiMinus,
+  FiType,
+  FiAlignLeft,
+  FiAlignCenter,
+  FiAlignRight
+} from 'react-icons/fi';
 import { Button, Input, TextArea } from '../styles/GlobalStyles';
 import { Article, Tag } from '../types/Article';
 import { apiService } from '../services/api';
@@ -91,14 +108,8 @@ const TagSelectionContainer = styled.div`
   align-items: center;
 `;
 
-const TagSelect = styled.select`
+const TagInput = styled(Input)`
   flex: 1;
-  padding: 12px 16px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  font-size: 14px;
 `;
 
 const AddTagButton = styled(Button)`
@@ -107,12 +118,49 @@ const AddTagButton = styled(Button)`
   gap: 8px;
 `;
 
+const EditorToolbar = styled.div`
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  flex-wrap: wrap;
+`;
+
+const ToolbarButton = styled.button<{ active?: boolean }>`
+  background: ${props => props.active ? 'var(--accent)' : 'transparent'};
+  color: ${props => props.active ? 'white' : 'var(--text-secondary)'};
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-size: 14px;
+
+  &:hover {
+    background: ${props => props.active ? 'var(--accent-hover)' : 'var(--bg-tertiary)'};
+    color: ${props => props.active ? 'white' : 'var(--text-primary)'};
+  }
+`;
+
 const MarkdownEditor = styled(TextArea)`
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 14px;
   line-height: 1.6;
   min-height: 500px;
   resize: vertical;
+  border-radius: 0 0 8px 8px;
+  border-top: none;
+`;
+
+const EditorSection = styled.div`
+  display: flex;
+  flex-direction: column;
 `;
 
 interface ArticleEditorProps {
@@ -130,7 +178,8 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
   const [content, setContent] = useState(article?.content || '');
   const [tags, setTags] = useState<Tag[]>(article?.tags && Array.isArray(article.tags) ? article.tags : []);
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
-  const [selectedTagId, setSelectedTagId] = useState('');
+  const [newTagName, setNewTagName] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Load available tags
   useEffect(() => {
@@ -148,18 +197,107 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
   }, []);
 
   const handleAddTag = async () => {
-    if (selectedTagId) {
-      const selectedTag = availableTags.find(tag => tag._id === selectedTagId);
-      if (selectedTag && !tags.find(tag => tag._id === selectedTag._id)) {
-        setTags([...tags, selectedTag]);
-        setSelectedTagId('');
+    if (newTagName.trim()) {
+      // Check if tag already exists in available tags
+      let existingTag = availableTags.find(tag => 
+        tag.name.toLowerCase() === newTagName.trim().toLowerCase()
+      );
+      
+      // If tag doesn't exist, create a new one
+      if (!existingTag) {
+        try {
+          const response = await apiService.createTag(newTagName.trim());
+          if (response.data) {
+            existingTag = response.data;
+            setAvailableTags(prev => [...prev, existingTag!]);
+          } else {
+            throw new Error(response.error || 'Failed to create tag');
+          }
+        } catch (error) {
+          console.error('Error creating tag:', error);
+          alert('Error creating tag. Please try again.');
+          return;
+        }
       }
+      
+      // Add tag to article if not already added
+      if (existingTag && !tags.find(tag => tag._id === existingTag._id)) {
+        setTags([...tags, existingTag!]);
+      }
+      
+      setNewTagName('');
     }
   };
 
   const handleRemoveTag = (tagToRemove: Tag) => {
     setTags(tags.filter(tag => tag._id !== tagToRemove._id));
   };
+
+  // Markdown toolbar functions
+  const insertText = (before: string, after: string = '', placeholder: string = '') => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = content.substring(start, end);
+    const textToInsert = selectedText || placeholder;
+    
+    const newContent = 
+      content.substring(0, start) + 
+      before + textToInsert + after + 
+      content.substring(end);
+    
+    setContent(newContent);
+    
+    // Set cursor position after insertion
+    setTimeout(() => {
+      const newCursorPos = start + before.length + textToInsert.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+      textarea.focus();
+    }, 0);
+  };
+
+  const insertAtLineStart = (prefix: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const lines = content.substring(0, start).split('\n');
+    const currentLine = lines.length - 1;
+    const lineStart = content.lastIndexOf('\n', start - 1) + 1;
+    
+    const newContent = 
+      content.substring(0, lineStart) + 
+      prefix + 
+      content.substring(lineStart);
+    
+    setContent(newContent);
+    
+    setTimeout(() => {
+      const newCursorPos = start + prefix.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+      textarea.focus();
+    }, 0);
+  };
+
+  const handleBold = () => insertText('**', '**', 'bold text');
+  const handleItalic = () => insertText('*', '*', 'italic text');
+  const handleCode = () => insertText('`', '`', 'code');
+  const handleCodeBlock = () => insertText('```\n', '\n```', 'code block');
+  const handleQuote = () => insertAtLineStart('> ');
+  const handleLink = () => {
+    const url = prompt('Enter URL:');
+    if (url) insertText('[', `](${url})`, 'link text');
+  };
+  const handleImage = () => {
+    const url = prompt('Enter image URL:');
+    if (url) insertText('![', `](${url})`, 'alt text');
+  };
+  const handleList = () => insertAtLineStart('- ');
+  const handleNumberedList = () => insertAtLineStart('1. ');
+  const handleHorizontalRule = () => insertText('\n---\n');
+  const handleHeading = (level: number) => insertAtLineStart('#'.repeat(level) + ' ');
 
   const handleSave = async () => {
     if (!title.trim() || !content.trim()) {
@@ -201,12 +339,12 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
     <EditorContainer>
       <EditorHeader>
         <BackButton variant="ghost" onClick={onBack}>
-          <FiArrowLeft />
+          <span><FiArrowLeft /></span>
           Back
         </BackButton>
         <HeaderActions>
           <Button variant="primary" onClick={handleSave}>
-            <FiSave />
+            <span><FiSave /></span>
             Save (Ctrl+S)
           </Button>
         </HeaderActions>
@@ -226,26 +364,25 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
         <FormSection>
           <Label htmlFor="tags">Tags</Label>
           <TagSelectionContainer>
-            <TagSelect
-              value={selectedTagId}
-              onChange={(e) => setSelectedTagId(e.target.value)}
-            >
-              <option value="">Select a tag...</option>
-              {availableTags.map(tag => (
-                <option key={tag._id} value={tag._id}>
-                  {tag.name}
-                </option>
-              ))}
-            </TagSelect>
+            <TagInput
+              value={newTagName}
+              onChange={(e) => setNewTagName(e.target.value)}
+              placeholder="Enter tag name..."
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handleAddTag();
+                }
+              }}
+            />
             <AddTagButton variant="secondary" onClick={handleAddTag}>
-              <FiTag />
+              <span><FiTag /></span>
               Add Tag
             </AddTagButton>
           </TagSelectionContainer>
           <TagsList>
             {tags.map(tag => (
               <TagItem key={tag._id}>
-                <FiTag />
+                <span><FiTag /></span>
                 {tag.name}
                 <RemoveTagButton onClick={() => handleRemoveTag(tag)}>
                   ×
@@ -257,13 +394,66 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
 
         <FormSection>
           <Label htmlFor="content">Content (Markdown)</Label>
-          <MarkdownEditor
-            id="content"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Write your article in Markdown..."
-            onKeyDown={handleKeyPress}
-          />
+          <EditorSection>
+            <EditorToolbar>
+              <ToolbarButton onClick={() => handleHeading(1)} title="Heading 1">
+                <span><FiType /></span>
+              </ToolbarButton>
+              <ToolbarButton onClick={() => handleHeading(2)} title="Heading 2">
+                <span><FiType /></span>
+              </ToolbarButton>
+              <ToolbarButton onClick={() => handleHeading(3)} title="Heading 3">
+                <span><FiType /></span>
+              </ToolbarButton>
+              
+              <div style={{ width: '1px', height: '24px', background: 'var(--border-color)', margin: '0 4px' }} />
+              
+              <ToolbarButton onClick={handleBold} title="Bold">
+                <span><FiBold /></span>
+              </ToolbarButton>
+              <ToolbarButton onClick={handleItalic} title="Italic">
+                <span><FiItalic /></span>
+              </ToolbarButton>
+              <ToolbarButton onClick={handleCode} title="Inline Code">
+                <span><FiCode /></span>
+              </ToolbarButton>
+              <ToolbarButton onClick={handleCodeBlock} title="Code Block">
+                <span><FiCode /></span>
+              </ToolbarButton>
+              
+              <div style={{ width: '1px', height: '24px', background: 'var(--border-color)', margin: '0 4px' }} />
+              
+              <ToolbarButton onClick={handleLink} title="Link">
+                <span><FiLink /></span>
+              </ToolbarButton>
+              <ToolbarButton onClick={handleImage} title="Image">
+                <span><FiImage /></span>
+              </ToolbarButton>
+              
+              <div style={{ width: '1px', height: '24px', background: 'var(--border-color)', margin: '0 4px' }} />
+              
+              <ToolbarButton onClick={handleList} title="Bullet List">
+                <span><FiList /></span>
+              </ToolbarButton>
+              <ToolbarButton onClick={handleNumberedList} title="Numbered List">
+                1.
+              </ToolbarButton>
+              <ToolbarButton onClick={handleQuote} title="Quote">
+                <span><FiMessageSquare /></span>
+              </ToolbarButton>
+              <ToolbarButton onClick={handleHorizontalRule} title="Horizontal Rule">
+                <span><FiMinus /></span>
+              </ToolbarButton>
+            </EditorToolbar>
+            <MarkdownEditor
+              ref={textareaRef}
+              id="content"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Write your article in Markdown..."
+              onKeyDown={handleKeyPress}
+            />
+          </EditorSection>
         </FormSection>
       </EditorContent>
     </EditorContainer>
