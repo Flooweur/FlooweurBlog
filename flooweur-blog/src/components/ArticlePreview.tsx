@@ -190,12 +190,11 @@ const ArticlePreview: React.FC<ArticlePreviewProps> = ({
               {article.updatedAt && new Date(article.updatedAt).getTime() !== new Date(article.createdAt).getTime() && (
                 <span>Updated: {new Date(article.updatedAt).toLocaleDateString()}</span>
               )}
-              {article.folder && <span>📁 {article.folder}</span>}
             </PreviewMeta>
-            {article.tags.length > 0 && (
+            {article.tags && Array.isArray(article.tags) && article.tags.length > 0 && (
               <PreviewTags>
                 {article.tags.map(tag => (
-                  <Tag key={tag}>{tag}</Tag>
+                  <Tag key={tag._id}>{tag.name}</Tag>
                 ))}
               </PreviewTags>
             )}

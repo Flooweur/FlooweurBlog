@@ -10,7 +10,7 @@ export interface Article {
   id?: string; // For compatibility
   title: string;
   content: string;
-  tags: Tag[];
+  tags: Tag[]; // Should always be an array, but components should handle undefined/null cases
   createdAt: Date | string;
   updatedAt: Date | string;
 }

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { FiX, FiSearch, FiFilter, FiPlus, FiFileText, FiTag, FiEdit3 } from 'react-icons/fi';
 import { Button, Input, Modal, ModalContent } from '../styles/GlobalStyles';
-import { Article, Tag } from '../types/Article';
+import type { Article, Tag as TagType } from '../types/Article';
 
 const SearchContainer = styled.div`
   position: relative;
@@ -151,7 +151,7 @@ const ArticleTags = styled.div`
   flex-wrap: wrap;
 `;
 
-const Tag = styled.span`
+const TagStyled = styled.span`
   background-color: var(--bg-tertiary);
   color: var(--text-secondary);
   padding: 2px 8px;
@@ -166,7 +166,7 @@ interface SearchPopupProps {
   onEditArticle: (article: Article) => void;
   onPreviewArticle: (article: Article) => void;
   articles: Article[];
-  tags: Tag[];
+  tags: TagType[];
 }
 
 const SearchPopup: React.FC<SearchPopupProps> = ({
@@ -184,7 +184,7 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
   const filteredArticles = articles.filter(article => {
     const matchesSearch = article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                         article.content.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTag = !selectedTag || article.tags.some(tag => tag._id === selectedTag);
+    const matchesTag = !selectedTag || (article.tags && Array.isArray(article.tags) && article.tags.some(tag => tag._id === selectedTag));
     return matchesSearch && matchesTag;
   });
 
@@ -238,11 +238,11 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
                   <span>{new Date(article.createdAt).toLocaleDateString()}</span>
                 </ArticleMeta>
                 <ArticleTags>
-                  {article.tags.map(tag => (
-                    <Tag key={tag._id}>
+                  {article.tags && Array.isArray(article.tags) && article.tags.map(tag => (
+                    <TagStyled key={tag._id}>
                       <FiTag style={{ marginRight: 4 }} />
                       {tag.name}
-                    </Tag>
+                    </TagStyled>
                   ))}
                 </ArticleTags>
               </ArticleInfo>

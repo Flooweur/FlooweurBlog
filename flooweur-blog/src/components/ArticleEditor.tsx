@@ -128,7 +128,7 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
 }) => {
   const [title, setTitle] = useState(article?.title || '');
   const [content, setContent] = useState(article?.content || '');
-  const [tags, setTags] = useState<Tag[]>(article?.tags || []);
+  const [tags, setTags] = useState<Tag[]>(article?.tags && Array.isArray(article.tags) ? article.tags : []);
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [selectedTagId, setSelectedTagId] = useState('');
 

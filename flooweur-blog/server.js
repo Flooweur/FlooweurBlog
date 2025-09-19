@@ -44,7 +44,12 @@ const Tag = mongoose.model('Tag', tagSchema);
 app.get('/api/articles', async (req, res) => {
   try {
     const articles = await Article.find().populate('tags').sort({ createdAt: -1 });
-    res.json(articles);
+    // Ensure all articles have a tags array, even if empty
+    const articlesWithTags = articles.map(article => ({
+      ...article.toObject(),
+      tags: article.tags || []
+    }));
+    res.json(articlesWithTags);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -57,7 +62,12 @@ app.get('/api/articles/:id', async (req, res) => {
     if (!article) {
       return res.status(404).json({ error: 'Article not found' });
     }
-    res.json(article);
+    // Ensure the article has a tags array, even if empty
+    const articleWithTags = {
+      ...article.toObject(),
+      tags: article.tags || []
+    };
+    res.json(articleWithTags);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -66,10 +76,19 @@ app.get('/api/articles/:id', async (req, res) => {
 // Create new article
 app.post('/api/articles', async (req, res) => {
   try {
-    const article = new Article(req.body);
+    const articleData = {
+      ...req.body,
+      tags: req.body.tags || [] // Ensure tags is always an array
+    };
+    const article = new Article(articleData);
     await article.save();
     await article.populate('tags');
-    res.status(201).json(article);
+    // Ensure the response has a tags array
+    const articleWithTags = {
+      ...article.toObject(),
+      tags: article.tags || []
+    };
+    res.status(201).json(articleWithTags);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -78,15 +97,25 @@ app.post('/api/articles', async (req, res) => {
 // Update article
 app.put('/api/articles/:id', async (req, res) => {
   try {
+    const updateData = {
+      ...req.body,
+      tags: req.body.tags || [], // Ensure tags is always an array
+      updatedAt: new Date()
+    };
     const article = await Article.findByIdAndUpdate(
       req.params.id,
-      { ...req.body, updatedAt: new Date() },
+      updateData,
       { new: true }
     ).populate('tags');
     if (!article) {
       return res.status(404).json({ error: 'Article not found' });
     }
-    res.json(article);
+    // Ensure the response has a tags array
+    const articleWithTags = {
+      ...article.toObject(),
+      tags: article.tags || []
+    };
+    res.json(articleWithTags);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -153,7 +182,12 @@ app.get('/api/articles/search/:query', async (req, res) => {
         { content: { $regex: query, $options: 'i' } }
       ]
     }).populate('tags').sort({ createdAt: -1 });
-    res.json(articles);
+    // Ensure all articles have a tags array, even if empty
+    const articlesWithTags = articles.map(article => ({
+      ...article.toObject(),
+      tags: article.tags || []
+    }));
+    res.json(articlesWithTags);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
