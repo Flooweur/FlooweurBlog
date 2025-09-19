@@ -201,11 +201,11 @@ const ArticlePreview: React.FC<ArticlePreviewProps> = ({
           </div>
           <HeaderActions>
             <Button variant="primary" onClick={() => onEdit(article)}>
-              <FiEdit3 />
+              <span><FiEdit3 /></span>
               Edit
             </Button>
             <CloseButton onClick={onClose}>
-              <FiX />
+              <span><FiX /></span>
             </CloseButton>
           </HeaderActions>
         </PreviewHeader>

@@ -22,13 +22,16 @@ const SearchInput = styled(Input)`
   padding-right: 40px;
 `;
 
-const SearchIcon = styled(FiSearch)`
+const SearchIconContainer = styled.div`
   position: absolute;
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-muted);
   pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 const AddButton = styled.button`
@@ -212,7 +215,9 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
       <ModalContent>
         <SearchHeader>
           <SearchContainer>
-            <SearchIcon />
+            <SearchIconContainer>
+              <FiSearch />
+            </SearchIconContainer>
             <SearchInput
               type="text"
               placeholder="Search articles..."
@@ -220,11 +225,11 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             <AddButton onClick={onNewArticle} title="New Article">
-              <FiPlus />
+              <span><FiPlus /></span>
             </AddButton>
           </SearchContainer>
           <CloseButton onClick={onClose}>
-            <FiX />
+            <span><FiX /></span>
           </CloseButton>
         </SearchHeader>
 
@@ -244,7 +249,7 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
           {filteredArticles.map(article => (
             <ArticleItem key={article._id || article.id}>
               <ArticleIcon>
-                <FiFileText />
+                <span><FiFileText /></span>
               </ArticleIcon>
               <ArticleInfo onClick={() => onPreviewArticle(article)}>
                 <ArticleTitle>{article.title}</ArticleTitle>
@@ -254,7 +259,7 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
                 <ArticleTags>
                   {article.tags && Array.isArray(article.tags) && article.tags.map(tag => (
                     <TagStyled key={tag._id}>
-                      <FiTag style={{ marginRight: 4 }} />
+                      <span><FiTag style={{ marginRight: 4 }} /></span>
                       {tag.name}
                     </TagStyled>
                   ))}
@@ -265,7 +270,7 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
                   e.stopPropagation();
                   onEditArticle(article);
                 }} title="Edit article">
-                  <FiEdit3 />
+                  <span><FiEdit3 /></span>
                 </ActionButton>
               </ArticleActions>
             </ArticleItem>

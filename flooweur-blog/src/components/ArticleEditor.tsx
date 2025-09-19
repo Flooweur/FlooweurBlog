@@ -11,7 +11,7 @@ import {
   FiImage,
   FiList,
   FiCode,
-  FiQuote,
+  FiMessageSquare,
   FiMinus,
   FiType,
   FiAlignLeft,
@@ -222,7 +222,7 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
       
       // Add tag to article if not already added
       if (existingTag && !tags.find(tag => tag._id === existingTag._id)) {
-        setTags([...tags, existingTag]);
+        setTags([...tags, existingTag!]);
       }
       
       setNewTagName('');
@@ -339,12 +339,12 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
     <EditorContainer>
       <EditorHeader>
         <BackButton variant="ghost" onClick={onBack}>
-          <FiArrowLeft />
+          <span><FiArrowLeft /></span>
           Back
         </BackButton>
         <HeaderActions>
           <Button variant="primary" onClick={handleSave}>
-            <FiSave />
+            <span><FiSave /></span>
             Save (Ctrl+S)
           </Button>
         </HeaderActions>
@@ -375,14 +375,14 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
               }}
             />
             <AddTagButton variant="secondary" onClick={handleAddTag}>
-              <FiTag />
+              <span><FiTag /></span>
               Add Tag
             </AddTagButton>
           </TagSelectionContainer>
           <TagsList>
             {tags.map(tag => (
               <TagItem key={tag._id}>
-                <FiTag />
+                <span><FiTag /></span>
                 {tag.name}
                 <RemoveTagButton onClick={() => handleRemoveTag(tag)}>
                   ×
@@ -397,52 +397,52 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
           <EditorSection>
             <EditorToolbar>
               <ToolbarButton onClick={() => handleHeading(1)} title="Heading 1">
-                <FiType />
+                <span><FiType /></span>
               </ToolbarButton>
               <ToolbarButton onClick={() => handleHeading(2)} title="Heading 2">
-                <FiType />
+                <span><FiType /></span>
               </ToolbarButton>
               <ToolbarButton onClick={() => handleHeading(3)} title="Heading 3">
-                <FiType />
+                <span><FiType /></span>
               </ToolbarButton>
               
               <div style={{ width: '1px', height: '24px', background: 'var(--border-color)', margin: '0 4px' }} />
               
               <ToolbarButton onClick={handleBold} title="Bold">
-                <FiBold />
+                <span><FiBold /></span>
               </ToolbarButton>
               <ToolbarButton onClick={handleItalic} title="Italic">
-                <FiItalic />
+                <span><FiItalic /></span>
               </ToolbarButton>
               <ToolbarButton onClick={handleCode} title="Inline Code">
-                <FiCode />
+                <span><FiCode /></span>
               </ToolbarButton>
               <ToolbarButton onClick={handleCodeBlock} title="Code Block">
-                <FiCode />
+                <span><FiCode /></span>
               </ToolbarButton>
               
               <div style={{ width: '1px', height: '24px', background: 'var(--border-color)', margin: '0 4px' }} />
               
               <ToolbarButton onClick={handleLink} title="Link">
-                <FiLink />
+                <span><FiLink /></span>
               </ToolbarButton>
               <ToolbarButton onClick={handleImage} title="Image">
-                <FiImage />
+                <span><FiImage /></span>
               </ToolbarButton>
               
               <div style={{ width: '1px', height: '24px', background: 'var(--border-color)', margin: '0 4px' }} />
               
               <ToolbarButton onClick={handleList} title="Bullet List">
-                <FiList />
+                <span><FiList /></span>
               </ToolbarButton>
               <ToolbarButton onClick={handleNumberedList} title="Numbered List">
                 1.
               </ToolbarButton>
               <ToolbarButton onClick={handleQuote} title="Quote">
-                <FiQuote />
+                <span><FiMessageSquare /></span>
               </ToolbarButton>
               <ToolbarButton onClick={handleHorizontalRule} title="Horizontal Rule">
-                <FiMinus />
+                <span><FiMinus /></span>
               </ToolbarButton>
             </EditorToolbar>
             <MarkdownEditor
