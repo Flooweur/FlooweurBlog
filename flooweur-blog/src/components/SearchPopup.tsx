@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { FiX, FiSearch, FiFilter, FiPlus, FiFolder, FiFileText, FiTag } from 'react-icons/fi';
+import { FiX, FiSearch, FiFilter, FiPlus, FiFolder, FiFileText, FiTag, FiUpload, FiDownload } from 'react-icons/fi';
 import { Button, Input, Modal, ModalContent } from '../styles/GlobalStyles';
 import { Article, ArticleFolder } from '../types/Article';
+import { saveAllArticlesAsJSON, loadAllArticlesFromJSON } from '../utils/jsonStorage';
 
 const SearchContainer = styled.div`
   position: relative;
@@ -183,6 +184,7 @@ interface SearchPopupProps {
   onClose: () => void;
   onNewArticle: () => void;
   onSelectArticle: (article: Article) => void;
+  onImportArticles: (articles: Article[]) => void;
   articles: Article[];
   folders: ArticleFolder[];
 }
@@ -192,6 +194,7 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
   onClose,
   onNewArticle,
   onSelectArticle,
+  onImportArticles,
   articles,
   folders
 }) => {
@@ -212,6 +215,21 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
     return folder.name.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
+  const handleExportAll = () => {
+    saveAllArticlesAsJSON(articles);
+  };
+
+  const handleImportAll = async () => {
+    try {
+      const importedArticles = await loadAllArticlesFromJSON();
+      onImportArticles(importedArticles);
+      alert(`Successfully imported ${importedArticles.length} articles!`);
+    } catch (error) {
+      console.error('Error importing articles:', error);
+      alert('Error importing articles from JSON file');
+    }
+  };
+
   return (
     <Modal isOpen={isOpen}>
       <ModalContent>
@@ -231,6 +249,16 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
         </SearchHeader>
 
         <ActionsSection>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <Button variant="secondary" onClick={handleImportAll}>
+              <FiUpload />
+              Import JSON
+            </Button>
+            <Button variant="secondary" onClick={handleExportAll}>
+              <FiDownload />
+              Export All
+            </Button>
+          </div>
           <NewArticleButton variant="primary" onClick={onNewArticle}>
             <FiPlus />
             New Article

@@ -6,6 +6,7 @@ import SearchPopup from './components/SearchPopup';
 import ArticleEditor from './components/ArticleEditor';
 import { Article, ArticleFolder } from './types/Article';
 import { exportArticleToPDF } from './utils/pdfExport';
+import { saveArticleAsJSON } from './utils/jsonStorage';
 
 type AppView = 'presentation' | 'search' | 'editor';
 
@@ -87,6 +88,14 @@ function App() {
       // Add new article
       setArticles(prev => [...prev, article]);
     }
+    
+    // Automatically save as JSON file
+    try {
+      saveArticleAsJSON(article);
+    } catch (error) {
+      console.error('Error saving article as JSON:', error);
+    }
+    
     setCurrentView('presentation');
   };
 
@@ -102,6 +111,13 @@ function App() {
       console.error('Error exporting PDF:', error);
       alert('Error exporting PDF. Please try again.');
     }
+  };
+
+  const handleImportArticles = (importedArticles: Article[]) => {
+    // Merge imported articles with existing ones, avoiding duplicates
+    const existingIds = new Set(articles.map(a => a.id));
+    const newArticles = importedArticles.filter(a => !existingIds.has(a.id));
+    setArticles(prev => [...prev, ...newArticles]);
   };
 
   // Get unique folder names from articles
@@ -121,6 +137,7 @@ function App() {
             onClose={handleCloseSearch}
             onNewArticle={handleNewArticle}
             onSelectArticle={handleSelectArticle}
+            onImportArticles={handleImportArticles}
             articles={articles}
             folders={folders}
           />

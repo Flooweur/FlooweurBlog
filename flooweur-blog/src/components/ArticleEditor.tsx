@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import ReactMarkdown from 'react-markdown';
-import { FiSave, FiEye, FiEdit3, FiArrowLeft, FiDownload, FiTag, FiFolder } from 'react-icons/fi';
+import { FiSave, FiEye, FiEdit3, FiArrowLeft, FiDownload, FiTag, FiFolder, FiUpload, FiFile } from 'react-icons/fi';
 import { Button, Input, TextArea, Card } from '../styles/GlobalStyles';
 import { Article } from '../types/Article';
+import { saveArticleAsJSON, loadArticleFromJSON } from '../utils/jsonStorage';
 
 const EditorContainer = styled.div`
   min-height: 100vh;
@@ -271,6 +272,32 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
     onSave(articleData);
   };
 
+  const handleSaveAsJSON = () => {
+    const articleData: Article = {
+      id: article?.id || Date.now().toString(),
+      title,
+      content,
+      tags,
+      folder: folder || undefined,
+      createdAt: article?.createdAt || new Date(),
+      updatedAt: new Date()
+    };
+    saveArticleAsJSON(articleData);
+  };
+
+  const handleLoadFromJSON = async () => {
+    try {
+      const loadedArticle = await loadArticleFromJSON();
+      setTitle(loadedArticle.title);
+      setContent(loadedArticle.content);
+      setTags(loadedArticle.tags);
+      setFolder(loadedArticle.folder || '');
+    } catch (error) {
+      console.error('Error loading article:', error);
+      alert('Error loading article from JSON file');
+    }
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && e.ctrlKey) {
       handleSave();
@@ -297,6 +324,14 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
           Back
         </BackButton>
         <HeaderActions>
+          <Button variant="secondary" onClick={handleLoadFromJSON}>
+            <FiUpload />
+            Load JSON
+          </Button>
+          <Button variant="secondary" onClick={handleSaveAsJSON}>
+            <FiFile />
+            Save JSON
+          </Button>
           <Button variant="secondary" onClick={() => onExportPDF({
             id: article?.id || Date.now().toString(),
             title,
