@@ -20,30 +20,75 @@ function App() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   // Load articles and tags from MongoDB on component mount
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [articlesResponse, tagsResponse] = await Promise.all([
-          apiService.getArticles(),
-          apiService.getTags()
-        ]);
+  const loadData = async () => {
+    try {
+      const [articlesResponse, tagsResponse] = await Promise.all([
+        apiService.getArticles(),
+        apiService.getTags()
+      ]);
 
-        if (articlesResponse.data) {
-          setArticles(articlesResponse.data);
-        } else {
-          console.error('Error loading articles:', articlesResponse.error);
-        }
-
-        if (tagsResponse.data) {
-          setTags(tagsResponse.data);
-        } else {
-          console.error('Error loading tags:', tagsResponse.error);
-        }
-      } catch (error) {
-        console.error('Error loading data:', error);
+      if (articlesResponse.data) {
+        setArticles(articlesResponse.data);
+      } else {
+        console.error('Error loading articles:', articlesResponse.error);
       }
-    };
 
+      if (tagsResponse.data) {
+        setTags(tagsResponse.data);
+      } else {
+        console.error('Error loading tags:', tagsResponse.error);
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+    }
+  };
+
+  const reloadTags = async () => {
+    try {
+      // First get all articles to check which tags are used
+      const [articlesResponse, tagsResponse] = await Promise.all([
+        apiService.getArticles(),
+        apiService.getTags()
+      ]);
+      
+      if (articlesResponse.data && tagsResponse.data) {
+        const articles = articlesResponse.data;
+        const allTags = tagsResponse.data;
+        
+        // Find tags that are actually used in articles
+        const usedTagIds = new Set<string>();
+        articles.forEach(article => {
+          if (article.tags && Array.isArray(article.tags)) {
+            article.tags.forEach(tag => {
+              if (tag._id) usedTagIds.add(tag._id);
+            });
+          }
+        });
+        
+        // Remove unused tags
+        const unusedTags = allTags.filter(tag => !usedTagIds.has(tag._id || ''));
+        for (const tag of unusedTags) {
+          if (tag._id) {
+            try {
+              await apiService.deleteTag(tag._id);
+            } catch (error) {
+              console.error(`Error deleting unused tag ${tag.name}:`, error);
+            }
+          }
+        }
+        
+        // Get fresh tags after cleanup
+        const freshTagsResponse = await apiService.getTags();
+        if (freshTagsResponse.data) {
+          setTags(freshTagsResponse.data);
+        }
+      }
+    } catch (error) {
+      console.error('Error reloading tags:', error);
+    }
+  };
+
+  useEffect(() => {
     loadData();
   }, []);
 
@@ -110,10 +155,37 @@ function App() {
         }
       }
       
+      // Reload tags in case new ones were created
+      await reloadTags();
+      
       setCurrentView('presentation');
     } catch (error) {
       console.error('Error saving article:', error);
       alert('Error saving article. Please try again.');
+    }
+  };
+
+  const handleDeleteArticle = async (article: Article) => {
+    try {
+      const response = await apiService.deleteArticle(article._id || article.id!);
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      
+      // Remove from articles list
+      setArticles(prev => prev.filter(a => 
+        (a._id || a.id) !== (article._id || article.id)
+      ));
+      
+      // Reload tags to remove unused ones
+      await reloadTags();
+      
+      // Go back to presentation
+      setCurrentView('presentation');
+      setCurrentArticle(undefined);
+    } catch (error) {
+      console.error('Error deleting article:', error);
+      alert('Error deleting article. Please try again.');
     }
   };
 
@@ -135,6 +207,7 @@ function App() {
           <ArticleEditor
             article={currentArticle}
             onSave={handleSaveArticle}
+            onDelete={handleDeleteArticle}
             onBack={handleBackToPresentation}
           />
         )}

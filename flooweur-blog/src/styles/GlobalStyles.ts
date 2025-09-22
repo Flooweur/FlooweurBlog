@@ -65,7 +65,7 @@ export const Container = styled.div`
   padding: 0 20px;
 `;
 
-export const Button = styled.button<{ variant?: 'primary' | 'secondary' | 'ghost' }>`
+export const Button = styled.button<{ variant?: 'primary' | 'secondary' | 'ghost' | 'danger' }>`
   padding: 12px 24px;
   border: none;
   border-radius: 8px;
@@ -103,6 +103,15 @@ export const Button = styled.button<{ variant?: 'primary' | 'secondary' | 'ghost
           &:hover {
             background-color: var(--bg-secondary);
             color: var(--text-primary);
+          }
+        `;
+      case 'danger':
+        return `
+          background-color: var(--danger);
+          color: white;
+          &:hover {
+            background-color: #c82333;
+            opacity: 0.9;
           }
         `;
       default:

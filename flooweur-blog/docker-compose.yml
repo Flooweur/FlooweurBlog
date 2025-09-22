@@ -17,6 +17,44 @@ services:
     networks:
       - blog-network
 
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: flooweur-blog-backend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      MONGODB_URI: mongodb://admin:password123@mongodb:27017/flooweur_blog?authSource=admin
+      NODE_ENV: production
+    depends_on:
+      - mongodb
+    networks:
+      - blog-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/api/articles', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: flooweur-blog-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    environment:
+      REACT_APP_API_URL: /api
+    depends_on:
+      - backend
+    networks:
+      - blog-network
+
   mongo-express:
     image: mongo-express:1.0.0
     container_name: flooweur-blog-mongo-express
