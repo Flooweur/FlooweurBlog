@@ -5,6 +5,11 @@ import { FiX, FiEdit3 } from 'react-icons/fi';
 import { Modal, ModalContent, Button } from '../styles/GlobalStyles';
 import { Article } from '../types/Article';
 
+// Icon wrapper to fix TypeScript compatibility with React 19
+const Icon = ({ IconComponent, ...props }: { IconComponent: any; [key: string]: any }) => {
+  return React.createElement(IconComponent, props);
+};
+
 const PreviewHeader = styled.div`
   display: flex;
   justify-content: space-between;
@@ -144,6 +149,22 @@ const PreviewContent = styled.div`
     border-radius: 8px;
     margin: 16px 0;
   }
+
+  hr {
+    border: none;
+    border-top: 2px solid var(--border-color);
+    margin: 24px 0;
+  }
+
+  strong, b {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  em, i {
+    font-style: italic;
+    color: var(--text-secondary);
+  }
 `;
 
 const HeaderActions = styled.div`
@@ -200,12 +221,15 @@ const ArticlePreview: React.FC<ArticlePreviewProps> = ({
             )}
           </div>
           <HeaderActions>
-            <Button variant="primary" onClick={() => onEdit(article)}>
-              <span><FiEdit3 /></span>
+            <Button variant="primary" onClick={() => {
+              onEdit(article);
+              onClose();
+            }}>
+              <Icon IconComponent={FiEdit3} size={16} />
               Edit
             </Button>
             <CloseButton onClick={onClose}>
-              <span><FiX /></span>
+              <Icon IconComponent={FiX} size={16} />
             </CloseButton>
           </HeaderActions>
         </PreviewHeader>

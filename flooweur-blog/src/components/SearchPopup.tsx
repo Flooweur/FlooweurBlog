@@ -4,6 +4,11 @@ import { FiX, FiSearch, FiFilter, FiPlus, FiFileText, FiTag, FiEdit3 } from 'rea
 import { Button, Input, Modal, ModalContent } from '../styles/GlobalStyles';
 import type { Article, Tag as TagType } from '../types/Article';
 
+// Icon wrapper to fix TypeScript compatibility with React 19
+const Icon = ({ IconComponent, ...props }: { IconComponent: any; [key: string]: any }) => {
+  return React.createElement(IconComponent, props);
+};
+
 const SearchContainer = styled.div`
   position: relative;
   width: 100%;
@@ -19,7 +24,7 @@ const SearchHeader = styled.div`
 const SearchInput = styled(Input)`
   flex: 1;
   padding-left: 40px;
-  padding-right: 40px;
+  padding-right: 52px;
 `;
 
 const SearchIconContainer = styled.div`
@@ -42,9 +47,9 @@ const AddButton = styled.button`
   background: var(--accent);
   border: none;
   color: white;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -216,7 +221,7 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
         <SearchHeader>
           <SearchContainer>
             <SearchIconContainer>
-              <FiSearch />
+              <Icon IconComponent={FiSearch} size={16} />
             </SearchIconContainer>
             <SearchInput
               type="text"
@@ -225,11 +230,11 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             <AddButton onClick={onNewArticle} title="New Article">
-              <span><FiPlus /></span>
+              <Icon IconComponent={FiPlus} size={20} />
             </AddButton>
           </SearchContainer>
           <CloseButton onClick={onClose}>
-            <span><FiX /></span>
+            <Icon IconComponent={FiX} size={16} />
           </CloseButton>
         </SearchHeader>
 
@@ -249,7 +254,7 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
           {filteredArticles.map(article => (
             <ArticleItem key={article._id || article.id}>
               <ArticleIcon>
-                <span><FiFileText /></span>
+                <Icon IconComponent={FiFileText} size={16} />
               </ArticleIcon>
               <ArticleInfo onClick={() => onPreviewArticle(article)}>
                 <ArticleTitle>{article.title}</ArticleTitle>
@@ -259,7 +264,7 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
                 <ArticleTags>
                   {article.tags && Array.isArray(article.tags) && article.tags.map(tag => (
                     <TagStyled key={tag._id}>
-                      <span><FiTag style={{ marginRight: 4 }} /></span>
+                      <Icon IconComponent={FiTag} size={16} style={{ marginRight: 4 }} />
                       {tag.name}
                     </TagStyled>
                   ))}
@@ -269,8 +274,9 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
                 <ActionButton onClick={(e) => {
                   e.stopPropagation();
                   onEditArticle(article);
+                  onClose();
                 }} title="Edit article">
-                  <span><FiEdit3 /></span>
+                  <Icon IconComponent={FiEdit3} size={16} />
                 </ActionButton>
               </ArticleActions>
             </ArticleItem>

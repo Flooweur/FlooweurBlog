@@ -16,11 +16,17 @@ import {
   FiType,
   FiAlignLeft,
   FiAlignCenter,
-  FiAlignRight
+  FiAlignRight,
+  FiTrash2
 } from 'react-icons/fi';
 import { Button, Input, TextArea } from '../styles/GlobalStyles';
 import { Article, Tag } from '../types/Article';
 import { apiService } from '../services/api';
+
+// Icon wrapper to fix TypeScript compatibility with React 19
+const Icon = ({ IconComponent, ...props }: { IconComponent: any; [key: string]: any }) => {
+  return React.createElement(IconComponent, props);
+};
 
 const EditorContainer = styled.div`
   min-height: 100vh;
@@ -33,7 +39,29 @@ const EditorHeader = styled.header`
   align-items: center;
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 1px solid var(--border-color);
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 50%;
+    height: 1px;
+    background: var(--border-color);
+    margin-right: 40px;
+  }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    right: 0;
+    height: 1px;
+    background: var(--border-color);
+    margin-left: 40px;
+  }
 `;
 
 const BackButton = styled(Button)`
@@ -112,6 +140,23 @@ const TagInput = styled(Input)`
   flex: 1;
 `;
 
+const TagDropdown = styled.select`
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  
+  &:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-light);
+  }
+`;
+
 const AddTagButton = styled(Button)`
   display: flex;
   align-items: center;
@@ -163,15 +208,95 @@ const EditorSection = styled.div`
   flex-direction: column;
 `;
 
+const CustomizationSection = styled.div`
+  margin-top: 48px;
+  padding: 24px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+`;
+
+const CustomizationTitle = styled.h3`
+  font-size: 1.2rem;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const CustomizationGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+`;
+
+const CustomizationItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const ColorInput = styled.input`
+  width: 100%;
+  height: 40px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--bg-primary);
+  cursor: pointer;
+  
+  &::-webkit-color-swatch {
+    border: none;
+    border-radius: 6px;
+  }
+  
+  &::-webkit-color-swatch-wrapper {
+    padding: 2px;
+    border-radius: 8px;
+  }
+`;
+
+const EmojiInput = styled.input`
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 16px;
+  text-align: center;
+`;
+
+const PreviewCard = styled.div<{ customization: any }>`
+  padding: 16px;
+  border-radius: 8px;
+  background-color: ${props => props.customization.cardColor};
+  border: 1px solid var(--border-color);
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+const PreviewIcon = styled.span`
+  font-size: 24px;
+`;
+
+const PreviewText = styled.div`
+  flex: 1;
+`;
+
 interface ArticleEditorProps {
   article?: Article;
   onSave: (article: Article) => void;
+  onDelete?: (article: Article) => void;
   onBack: () => void;
 }
 
 const ArticleEditor: React.FC<ArticleEditorProps> = ({
   article,
   onSave,
+  onDelete,
   onBack
 }) => {
   const [title, setTitle] = useState(article?.title || '');
@@ -179,6 +304,12 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
   const [tags, setTags] = useState<Tag[]>(article?.tags && Array.isArray(article.tags) ? article.tags : []);
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [newTagName, setNewTagName] = useState('');
+  const [customization, setCustomization] = useState({
+    backgroundColor: article?.customization?.backgroundColor || '#ffffff',
+    cardColor: article?.customization?.cardColor || '#f8f9fa',
+    icon: article?.customization?.icon || '📝',
+    accentColor: article?.customization?.accentColor || '#007bff'
+  });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Load available tags
@@ -221,8 +352,8 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
       }
       
       // Add tag to article if not already added
-      if (existingTag && !tags.find(tag => tag._id === existingTag._id)) {
-        setTags([...tags, existingTag!]);
+      if (existingTag && !tags.find(tag => tag._id === existingTag!._id)) {
+        setTags([...tags, existingTag]);
       }
       
       setNewTagName('');
@@ -310,11 +441,23 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
       title,
       content,
       tags,
+      customization,
       createdAt: article?.createdAt || new Date(),
       updatedAt: new Date()
     };
     
     onSave(articleData);
+  };
+
+  const handleDelete = () => {
+    if (!article || (!article._id && !article.id)) {
+      alert('Cannot delete a new article');
+      return;
+    }
+
+    if (window.confirm('Are you sure you want to delete this article? This action cannot be undone.')) {
+      onDelete?.(article);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -339,12 +482,18 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
     <EditorContainer>
       <EditorHeader>
         <BackButton variant="ghost" onClick={onBack}>
-          <span><FiArrowLeft /></span>
+          <Icon IconComponent={FiArrowLeft} size={16} />
           Back
         </BackButton>
         <HeaderActions>
+          {article && (article._id || article.id) && onDelete && (
+            <Button variant="danger" onClick={handleDelete}>
+              <Icon IconComponent={FiTrash2} size={16} />
+              Delete
+            </Button>
+          )}
           <Button variant="primary" onClick={handleSave}>
-            <span><FiSave /></span>
+            <Icon IconComponent={FiSave} size={16} />
             Save (Ctrl+S)
           </Button>
         </HeaderActions>
@@ -364,10 +513,34 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
         <FormSection>
           <Label htmlFor="tags">Tags</Label>
           <TagSelectionContainer>
+            <TagDropdown
+              value=""
+              onChange={(e) => {
+                if (e.target.value) {
+                  const selectedTag = availableTags.find(tag => tag._id === e.target.value);
+                  if (selectedTag && !tags.find(tag => tag._id === selectedTag._id)) {
+                    setTags([...tags, selectedTag]);
+                  }
+                  e.target.value = ''; // Reset dropdown
+                }
+              }}
+            >
+              <option value="">Select existing tag...</option>
+              {availableTags
+                .filter(tag => !tags.find(t => t._id === tag._id))
+                .map(tag => (
+                  <option key={tag._id} value={tag._id}>
+                    {tag.name}
+                  </option>
+                ))
+              }
+            </TagDropdown>
+          </TagSelectionContainer>
+          <TagSelectionContainer>
             <TagInput
               value={newTagName}
               onChange={(e) => setNewTagName(e.target.value)}
-              placeholder="Enter tag name..."
+              placeholder="Or create new tag..."
               onKeyPress={(e) => {
                 if (e.key === 'Enter') {
                   handleAddTag();
@@ -375,14 +548,14 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
               }}
             />
             <AddTagButton variant="secondary" onClick={handleAddTag}>
-              <span><FiTag /></span>
+              <Icon IconComponent={FiTag} size={16} />
               Add Tag
             </AddTagButton>
           </TagSelectionContainer>
           <TagsList>
             {tags.map(tag => (
               <TagItem key={tag._id}>
-                <span><FiTag /></span>
+                <Icon IconComponent={FiTag} size={16} />
                 {tag.name}
                 <RemoveTagButton onClick={() => handleRemoveTag(tag)}>
                   ×
@@ -397,52 +570,52 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
           <EditorSection>
             <EditorToolbar>
               <ToolbarButton onClick={() => handleHeading(1)} title="Heading 1">
-                <span><FiType /></span>
+                <Icon IconComponent={FiType} size={16} />
               </ToolbarButton>
               <ToolbarButton onClick={() => handleHeading(2)} title="Heading 2">
-                <span><FiType /></span>
+                <Icon IconComponent={FiType} size={16} />
               </ToolbarButton>
               <ToolbarButton onClick={() => handleHeading(3)} title="Heading 3">
-                <span><FiType /></span>
+                <Icon IconComponent={FiType} size={16} />
               </ToolbarButton>
               
               <div style={{ width: '1px', height: '24px', background: 'var(--border-color)', margin: '0 4px' }} />
               
               <ToolbarButton onClick={handleBold} title="Bold">
-                <span><FiBold /></span>
+                <Icon IconComponent={FiBold} size={16} />
               </ToolbarButton>
               <ToolbarButton onClick={handleItalic} title="Italic">
-                <span><FiItalic /></span>
+                <Icon IconComponent={FiItalic} size={16} />
               </ToolbarButton>
               <ToolbarButton onClick={handleCode} title="Inline Code">
-                <span><FiCode /></span>
+                <Icon IconComponent={FiCode} size={16} />
               </ToolbarButton>
               <ToolbarButton onClick={handleCodeBlock} title="Code Block">
-                <span><FiCode /></span>
+                <Icon IconComponent={FiCode} size={16} />
               </ToolbarButton>
               
               <div style={{ width: '1px', height: '24px', background: 'var(--border-color)', margin: '0 4px' }} />
               
               <ToolbarButton onClick={handleLink} title="Link">
-                <span><FiLink /></span>
+                <Icon IconComponent={FiLink} size={16} />
               </ToolbarButton>
               <ToolbarButton onClick={handleImage} title="Image">
-                <span><FiImage /></span>
+                <Icon IconComponent={FiImage} size={16} />
               </ToolbarButton>
               
               <div style={{ width: '1px', height: '24px', background: 'var(--border-color)', margin: '0 4px' }} />
               
               <ToolbarButton onClick={handleList} title="Bullet List">
-                <span><FiList /></span>
+                <Icon IconComponent={FiList} size={16} />
               </ToolbarButton>
               <ToolbarButton onClick={handleNumberedList} title="Numbered List">
                 1.
               </ToolbarButton>
               <ToolbarButton onClick={handleQuote} title="Quote">
-                <span><FiMessageSquare /></span>
+                <Icon IconComponent={FiMessageSquare} size={16} />
               </ToolbarButton>
               <ToolbarButton onClick={handleHorizontalRule} title="Horizontal Rule">
-                <span><FiMinus /></span>
+                <Icon IconComponent={FiMinus} size={16} />
               </ToolbarButton>
             </EditorToolbar>
             <MarkdownEditor
@@ -455,6 +628,70 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
             />
           </EditorSection>
         </FormSection>
+
+        <CustomizationSection>
+          <CustomizationTitle>
+            🎨 Article Customization
+          </CustomizationTitle>
+          <CustomizationGrid>
+            <CustomizationItem>
+              <Label>Background Color</Label>
+              <ColorInput
+                type="color"
+                value={customization.backgroundColor}
+                onChange={(e) => setCustomization(prev => ({
+                  ...prev,
+                  backgroundColor: e.target.value
+                }))}
+              />
+            </CustomizationItem>
+            
+            <CustomizationItem>
+              <Label>Card Color</Label>
+              <ColorInput
+                type="color"
+                value={customization.cardColor}
+                onChange={(e) => setCustomization(prev => ({
+                  ...prev,
+                  cardColor: e.target.value
+                }))}
+              />
+            </CustomizationItem>
+            
+            <CustomizationItem>
+              <Label>Accent Color</Label>
+              <ColorInput
+                type="color"
+                value={customization.accentColor}
+                onChange={(e) => setCustomization(prev => ({
+                  ...prev,
+                  accentColor: e.target.value
+                }))}
+              />
+            </CustomizationItem>
+            
+            <CustomizationItem>
+              <Label>Article Icon</Label>
+              <EmojiInput
+                type="text"
+                value={customization.icon}
+                onChange={(e) => setCustomization(prev => ({
+                  ...prev,
+                  icon: e.target.value
+                }))}
+                placeholder="🚀"
+                maxLength={4}
+              />
+            </CustomizationItem>
+          </CustomizationGrid>
+          
+          <PreviewCard customization={customization}>
+            <PreviewIcon>{customization.icon}</PreviewIcon>
+            <PreviewText>
+              <strong>Preview:</strong> {title || 'Article Title'} with custom styling
+            </PreviewText>
+          </PreviewCard>
+        </CustomizationSection>
       </EditorContent>
     </EditorContainer>
   );

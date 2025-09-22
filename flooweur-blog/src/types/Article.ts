@@ -13,4 +13,10 @@ export interface Article {
   tags: Tag[]; // Should always be an array, but components should handle undefined/null cases
   createdAt: Date | string;
   updatedAt: Date | string;
+  customization?: {
+    backgroundColor?: string;
+    cardColor?: string;
+    icon?: string;
+    accentColor?: string;
+  };
 }
